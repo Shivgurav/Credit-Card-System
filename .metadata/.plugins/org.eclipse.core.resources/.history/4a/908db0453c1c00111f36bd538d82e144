@@ -1,0 +1,35 @@
+package com.payPanda.service;
+
+import java.util.Optional;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.stereotype.Service;
+
+import com.payPanda.dto.AuthDTO;
+import com.payPanda.entity.AuthEntity;
+import com.payPanda.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImple implements AuthService {
+	
+	private final UserRepository repo;
+	private final ModelMapper modelMapper;
+	
+	@Override
+	public Optional<AuthDTO> getUserByEmail(String email) {
+		Optional<AuthEntity> optional=repo.findByEmail( email);
+		if(optional.isPresent()) {
+			AuthEntity authEntity=optional.get();
+			AuthDTO authDTO=modelMapper.map(authEntity, AuthDTO.class);
+			return Optional.of(authDTO);
+			
+		}
+		return Optional.empty();
+		
+		
+	}
+
+}

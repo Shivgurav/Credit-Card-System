@@ -1,0 +1,10 @@
+package com.payPanda.dto;
+
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Data
+public class UpdateLimitRequestDTO {
+    private BigDecimal amount;
+}

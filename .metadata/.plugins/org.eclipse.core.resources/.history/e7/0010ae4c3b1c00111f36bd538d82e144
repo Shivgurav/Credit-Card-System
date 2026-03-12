@@ -1,0 +1,11 @@
+package com.payPanda.service;
+
+import java.util.Optional;
+
+import com.payPanda.dto.AuthDTO;
+
+public interface AuthService {
+
+	Optional<AuthDTO> getUserByEmail(String email);
+
+}

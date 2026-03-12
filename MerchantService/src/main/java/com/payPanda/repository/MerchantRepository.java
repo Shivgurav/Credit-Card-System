@@ -1,0 +1,19 @@
+package com.payPanda.repository;
+
+import com.payPanda.entity.MerchantEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface MerchantRepository extends JpaRepository<MerchantEntity, String> {
+
+    // Check for duplicate email before registration
+    boolean existsByEmail(String email);
+
+    // Check for duplicate mobile before registration
+    boolean existsByMobileNumber(String mobileNumber);
+    
+    boolean existsByMerchantId(String merchantId);
+}

@@ -1,0 +1,5 @@
+package com.payPanda.dto;
+
+public class LoginDTO {
+
+}

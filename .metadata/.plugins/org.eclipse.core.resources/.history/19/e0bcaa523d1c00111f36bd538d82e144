@@ -1,0 +1,5 @@
+package com.payPanda.security;
+
+public class JwtService {
+
+}

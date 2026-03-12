@@ -1,0 +1,16 @@
+package com.payPanda.dto;
+
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Data
+public class CardDetailsDTO {
+
+    private String cardNumber;
+    private String cardStatus;          // "Open" / "Blocked" / "Closed"
+    private BigDecimal creditLimit;     // Total credit limit
+    private BigDecimal availableLimit;  // Remaining limit
+    private String expiryDate;          // Format: YYMM  e.g. "2612" = Dec 2026
+    private BigDecimal perDayLimit;     // Max spend per day from product master
+}

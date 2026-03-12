@@ -1,0 +1,51 @@
+package com.payPanda.controller;
+
+import com.payPanda.dto.TransactionRequestDTO;
+import com.payPanda.dto.TransactionResponseDTO;
+import com.payPanda.service.TransactionService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/transactions")
+@RequiredArgsConstructor
+public class TransactionController {
+
+    private final TransactionService transactionService;
+
+    /**
+     * POST /transactions
+     * Submit a new transaction — full validation pipeline runs here.
+     * Called by: React Transaction Page → API Gateway → this endpoint.
+     */
+    @PostMapping
+    public ResponseEntity<TransactionResponseDTO> processTransaction(
+            @Valid @RequestBody TransactionRequestDTO request) {
+        TransactionResponseDTO response = transactionService.processTransaction(request);
+        // Return 200 for both APPROVED and DECLINED — it's not an error, just a business outcome
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * GET /transactions/{cardNumber}
+     * Get all transactions for a given card.
+     * Called by: React Transaction History / Admin Dashboard.
+     */
+    @GetMapping("/{cardNumber}")
+    public ResponseEntity<List<TransactionResponseDTO>> getTransactionsByCard(
+            @PathVariable String cardNumber) {
+        return ResponseEntity.ok(transactionService.getTransactionsByCard(cardNumber));
+    }
+    @GetMapping("/{cardNumber}")
+    public ResponseEntity<List<TransactionResponseDTO>> getTransactionsByCard(
+            @PathVariable String cardNumber) {
+        return ResponseEntity.ok(transactionService.getTransactionsByCard(cardNumber));
+    }
+}

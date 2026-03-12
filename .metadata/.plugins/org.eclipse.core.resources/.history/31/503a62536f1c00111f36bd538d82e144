@@ -1,0 +1,5 @@
+package com.payPanda.entity;
+
+public class TransactionEntity {
+
+}

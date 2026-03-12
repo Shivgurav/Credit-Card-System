@@ -1,0 +1,100 @@
+package com.payPanda.service;
+
+import java.util.Optional;
+
+import org.modelmapper.ModelMapper;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.payPanda.dto.AuthDTO;
+import com.payPanda.dto.LoginDTO;
+import com.payPanda.dto.LoginResponseDTO;
+import com.payPanda.dto.SignUpDTO;
+import com.payPanda.entity.AuthEntity;
+import com.payPanda.repository.UserRepository;
+import com.payPanda.security.JwtService;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class AuthServiceImple implements AuthService {
+	
+	private final UserRepository repo;
+	private final ModelMapper modelMapper;
+	private final PasswordEncoder passwordEncoder;
+	private final JwtService jwtService;
+	
+	@Override
+	public Optional<AuthDTO> getUserByEmail(String email) {
+		Optional<AuthEntity> optional=repo.findByEmail( email);
+		if(optional.isPresent()) {
+			AuthEntity authEntity=optional.get();
+			AuthDTO authDTO=modelMapper.map(authEntity, AuthDTO.class);
+			return Optional.of(authDTO);
+			
+		}
+		return Optional.empty();
+		
+		
+	}
+
+	@Override
+	public LoginResponseDTO login(LoginDTO loginDTO) {
+		// TODO Auto-generated method stub
+		 AuthEntity user = repo.findByEmail(loginDTO.getEmail())
+	                .orElseThrow(() -> new RuntimeException("User not found"));
+
+	        if(!passwordEncoder.matches(loginDTO.getPassword(), user.getPassword())){
+	            throw new RuntimeException("Invalid password");
+	        }
+
+	        String token = jwtService.generateToken(user.getEmail());
+
+	        return new LoginResponseDTO(token, user.getRole(),user.getName());
+	}
+
+	@Override
+	public String signUp(SignUpDTO signUpDTO) {
+
+	    String msg = "";
+
+	    String pancard = signUpDTO.getPancard().trim().toUpperCase();
+
+	    String regex = "^[A-Z]{5}[0-9]{4}[A-Z]{1}$";
+
+	    if (!pancard.matches(regex)) {
+	        msg = "Invalid pancard credentials";
+	    } else {
+
+	        signUpDTO.setPancard(pancard);
+
+	        String password = signUpDTO.getPassword();
+	        signUpDTO.setPassword(password);
+
+	        AuthEntity authEntity = modelMapper.map(signUpDTO, AuthEntity.class);
+authEntity.setRole("user");
+	        repo.save(authEntity);
+
+	        msg = "saved successfully";
+	    }
+
+	    return msg;
+	}
+
+	@Override
+	public String delete(String email) {
+		// TODO Auto-generated method stub
+		Optional<AuthEntity> optional=repo.findByEmail(email);
+		if(optional.isPresent()){
+			AuthEntity authEntity=optional.get();
+			repo.delete(authEntity);
+			return "deleted successfully";
+		}
+		else {
+			return "Invalid email";
+		}
+	}
+	
+
+}

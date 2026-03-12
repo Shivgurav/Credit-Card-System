@@ -1,0 +1,53 @@
+package com.payPanda.dto;
+
+import jakarta.validation.constraints.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
+@Data
+public class CardApplicationRequestDTO {
+
+    // ── Personal details ─────────────────────────────────────────────────────
+
+    @NotBlank(message = "Name is mandatory")
+    @Pattern(regexp = "^[a-zA-Z ]{1,100}$", message = "Name must contain letters only, max 100 chars")
+    private String name;
+
+    @NotNull(message = "Date of birth is mandatory")
+    @Past(message = "Date of birth must be a past date")
+    private LocalDate dateOfBirth;
+
+    @NotBlank(message = "Email is mandatory")
+    @Email(message = "Invalid email format")
+    private String email;
+
+    @NotBlank(message = "Mobile number is mandatory")
+    @Pattern(regexp = "^[6-9]\\d{9}$", message = "Invalid Indian mobile number")
+    private String mobileNumber;
+
+    private String address;             // Optional, max 255 chars
+
+    @NotBlank(message = "PAN number is mandatory")
+    @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]$", message = "Invalid PAN format. Expected: ABCDE1234F")
+    private String panNumber;
+
+    // ── Financial details ─────────────────────────────────────────────────────
+
+    @NotBlank(message = "Occupation is mandatory")
+    private String occupation;          // Salaried / Self-Employed / Business
+
+    @NotNull(message = "Annual salary is mandatory")
+    @DecimalMin(value = "0.01", message = "Annual salary must be greater than zero")
+    private BigDecimal annualSalary;
+
+    @NotNull(message = "IT return information is mandatory")
+    private Boolean itReturnFiled;
+
+    // ── Product preference ────────────────────────────────────────────────────
+
+    @NotBlank(message = "Product type is mandatory")
+    @Pattern(regexp = "^(VISA|MASTERCARD)$", message = "Product type must be VISA or MASTERCARD")
+    private String productType;
+}

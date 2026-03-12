@@ -1,0 +1,42 @@
+# Application Name
+spring.application.name=auth-service
+
+# Server Port
+server.port=8081
+
+# ==============================
+# PostgreSQL (Neon Database)
+# ==============================
+
+spring.datasource.url=jdbc:postgresql://ep-weathered-silence-a1kiwre1-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+spring.datasource.username=neondb_owner
+spring.datasource.password=npg_KFWCLdq0Qj2D
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# ==============================
+# JPA / Hibernate
+# ==============================
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+
+# ==============================
+# Eureka Client
+# ==============================
+
+# eureka.client.service-url.defaultZone=http://localhost:8761/eureka
+
+# ==============================
+# Swagger
+# ==============================
+
+springdoc.swagger-ui.path=/swagger-ui.html
+
+# ==============================
+# JWT
+# ==============================
+
+jwt.secret=paypandaSecretKeyForJwtGeneration123456
+jwt.expiration=86400000

@@ -1,0 +1,13 @@
+package com.payPanda.dto;
+
+
+
+import lombok.Data;
+
+@Data
+public class validatecardNumberDTO {
+	private Long cardNumber;
+	private Double amountToBeDeducted;
+	
+
+}

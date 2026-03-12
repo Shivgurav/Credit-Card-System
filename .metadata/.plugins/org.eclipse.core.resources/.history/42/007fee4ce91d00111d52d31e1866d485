@@ -1,0 +1,56 @@
+package com.payPanda.controller;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.payPanda.dto.LoginDTO;
+import com.payPanda.dto.LoginResponseDTO;
+import com.payPanda.dto.SignUpDTO;
+import com.payPanda.service.AuthService;
+
+import lombok.RequiredArgsConstructor;
+
+@CrossOrigin(origins = "*")
+@RestController
+@RequestMapping("/auth")
+@RequiredArgsConstructor
+public class AuthLoginController {
+
+    private final AuthService authService;
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginDTO loginDTO){
+
+        LoginResponseDTO response = authService.login(loginDTO);
+
+        return ResponseEntity.ok(response);
+    }
+    @PostMapping("/signup")
+    public String signUp(@RequestBody SignUpDTO signUpDTO) {
+    	String response=authService.signUp(signUpDTO);
+    	return response;
+    	
+    }
+    @DeleteMapping("/delete")
+    public String delete(@RequestParam String email) {
+    	String response=authService.delete(email);
+    	return response;
+    }
+    @PostMapping("/request-otp")
+    public String requestOtp(@RequestParam String email){
+        return authService.sendOtp(email);
+    }
+    @PostMapping("/verify-otp")
+    public String verifyOtp(@RequestParam String email,
+                            @RequestParam String otp){
+        return authService.verifyOtp(email, otp);
+    }
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestParam String email,
+                                @RequestParam String newPassword){
+        return authService.resetPassword(email, newPassword);
+    }
+    
+    
+    
+}

@@ -1,0 +1,142 @@
+package com.payPanda.service;
+
+import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+
+import com.payPanda.dto.CardDetailsDTO;
+import com.payPanda.dto.MerchantDetailsDTO;
+import com.payPanda.dto.ResponseDTO;
+import com.payPanda.dto.TransactionRequestDTO;
+import com.payPanda.dto.TransactionResponseDTO;
+import com.payPanda.entity.TransactionEntity;
+import com.payPanda.repository.TransactionRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class TransactionServiceImple implements TransactionService {
+
+    private static final Logger log = LoggerFactory.getLogger(TransactionServiceImple.class);
+    private static final SecureRandom random = new SecureRandom();
+
+    private final TransactionRepository repo;
+    private final RestTemplate restTemplate;
+
+    // Docker container-to-container URLs using service names from docker-compose.yml
+    // These work inside Docker; outside Docker use localhost:8082 / localhost:8083
+    private static final String CARD_SERVICE_URL     = "http://card-service:8082";
+    private static final String MERCHANT_SERVICE_URL = "http://merchant-service:8083";
+
+    @Override
+    public ResponseDTO createTransaction(TransactionRequestDTO request) {
+
+        // Step 1: Validate card
+        CardDetailsDTO card = validateCardNumber(request.getCardNumber());
+        if (card == null) {
+            return new ResponseDTO("DECLINED", "Card validation service unavailable", null);
+        }
+
+        // Step 2: Check card status
+        if (!"Open".equalsIgnoreCase(card.getCardStatus())) {
+            return new ResponseDTO("DECLINED", "Card is " + card.getCardStatus() + ". Transactions not allowed.", null);
+        }
+
+        // Step 3: Check card expiry
+        if (isCardExpired(card.getExpiryDate())) {
+            return new ResponseDTO("DECLINED", "Card has expired", null);
+        }
+
+        // Step 4: Validate merchant
+        MerchantDetailsDTO merchant = validateMerchantId(request.getMerchantId());
+        if (merchant == null) {
+            return new ResponseDTO("DECLINED", "Merchant validation service unavailable", null);
+        }
+        if (!"Active".equalsIgnoreCase(merchant.getStatus())) {
+            return new ResponseDTO("DECLINED", "Merchant is not active", null);
+        }
+
+        // Step 5: Check available credit limit
+        if (card.getAvailableLimit().compareTo(request.getAmount()) < 0) {
+            return new ResponseDTO("DECLINED", "Insufficient credit limit", null);
+        }
+
+        // Step 6: All validations passed — save transaction
+        TransactionEntity transaction = new TransactionEntity();
+        transaction.setCardNumber(request.getCardNumber());
+        transaction.setMerchantId(request.getMerchantId());
+        transaction.setAmount(request.getAmount());
+        transaction.setTransactionDate(LocalDateTime.now());
+        transaction.setAuthCode(generateAuthCode());
+        transaction.setStatus("APPROVED");
+
+        repo.save(transaction);
+
+        log.info("Transaction APPROVED for card={} merchant={} amount={}",
+                request.getCardNumber(), request.getMerchantId(), request.getAmount());
+
+        return new ResponseDTO("APPROVED", "Transaction approved", transaction.getAuthCode());
+    }
+
+    // ──────────────────────────────────────────────
+    // Private helpers
+    // ──────────────────────────────────────────────
+
+    private CardDetailsDTO validateCardNumber(Long long1) {
+        String url = CARD_SERVICE_URL + "/cards/" + long1;
+        try {
+            ResponseEntity<CardDetailsDTO> response =
+                    restTemplate.getForEntity(url, CardDetailsDTO.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (RestClientException e) {
+            log.error("Card service unreachable for card={}", long1, e);
+        }
+        return null;
+    }
+
+    private MerchantDetailsDTO validateMerchantId(String merchantId) {
+        String url = MERCHANT_SERVICE_URL + "/merchants/" + merchantId;
+        try {
+            ResponseEntity<MerchantDetailsDTO> response =
+                    restTemplate.getForEntity(url, MerchantDetailsDTO.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (RestClientException e) {
+            log.error("Merchant service unreachable for merchant={}", merchantId, e);
+        }
+        return null;
+    }
+
+    /**
+     * Checks if the card is expired.
+     * Neon DB stores expiry as YYMM (e.g. "2612" = December 2026)
+     */
+    private boolean isCardExpired(String expiryYYMM) {
+        try {
+            int year  = 2000 + Integer.parseInt(expiryYYMM.substring(0, 2));
+            int month = Integer.parseInt(expiryYYMM.substring(2, 4));
+            LocalDateTime expiry = LocalDateTime.of(year, month, 1, 23, 59, 59)
+                    .plusMonths(1).minusDays(1); // last day of expiry month
+            return LocalDateTime.now().isAfter(expiry);
+        } catch (Exception e) {
+            log.warn("Could not parse expiry date: {}", expiryYYMM);
+            return true; // treat unparseable expiry as expired — safe default
+        }
+    }
+
+    private String generateAuthCode() {
+        int code = 100000 + random.nextInt(900000);
+        return String.valueOf(code);
+    }
+}

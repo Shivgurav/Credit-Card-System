@@ -1,0 +1,46 @@
+package com.payPanda.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.math.BigDecimal;
+
+@Entity
+@Table(name = "credit_card")
+@Data
+public class CreditCardEntity {
+
+    @Id
+    @Column(name = "card_number")
+    private Long cardNumber;            // 16-digit, VISA starts with 4, MASTERCARD with 5
+
+    @Column(name = "application_id", nullable = false)
+    private Long applicationId;         // back-reference to the application
+
+    @Column(name = "customer_name", length = 100, nullable = false)
+    private String customerName;
+
+    @Column(name = "pan_number", length = 10, nullable = false)
+    private String panNumber;
+
+    @Column(name = "card_type", length = 20, nullable = false)
+    private String cardType;            // "VISA" or "MASTERCARD"
+
+    @Column(name = "credit_limit", nullable = false, precision = 10, scale = 2)
+    private BigDecimal creditLimit;     // calculated from annual salary
+
+    @Column(name = "available_limit", nullable = false, precision = 10, scale = 2)
+    private BigDecimal availableLimit;  // starts equal to credit_limit
+
+    @Column(name = "expiry_date", length = 5, nullable = false)
+    private String expiryDate;          // Format: YYMM — 3 years from issue date
+
+    @Column(name = "cvv", length = 3, nullable = false)
+    private String cvv;                 // 3-digit, stored as string (never expose in GET)
+
+    @Column(name = "card_status", length = 20, nullable = false)
+    private String cardStatus;          // "Open" / "Blocked" / "Closed"
+
+    @Column(name = "per_day_limit", precision = 10, scale = 2)
+    private BigDecimal perDayLimit;     // based on salary tier
+}

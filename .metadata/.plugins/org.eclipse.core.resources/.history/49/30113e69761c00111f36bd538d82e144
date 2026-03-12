@@ -1,0 +1,36 @@
+package com.payPanda.service;
+
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import com.payPanda.dto.CardDeatilsDTO;
+import com.payPanda.dto.TransactionRequestDTO;
+import com.payPanda.repository.TransactionRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class TransactionServiceImple implements TransactionService {
+	private final TransactionRepository repo;
+	private static final RestTemplate restTemplate = new RestTemplate();
+	
+	@Override
+	public String createTransaction(TransactionRequestDTO transactionRequestDTO) {
+		Long cardNumber =transactionRequestDTO.getCardNumber();
+		TransactionServiceImple.validateCardNumer(cardNumber);
+		return "";
+	}
+		private static CardDeatilsDTO validateCardNumer(Long cardNumber) {
+			// TODO Auto-generated method stub
+			String url = "http://192.168.0.157:8084/cards/validate" + cardNumber;
+			 CardDeatilsDTO card =
+	                    restTemplate.getForObject(url, CardDeatilsDTO.class);
+			 return card;
+			
+			
+		}
+
+}

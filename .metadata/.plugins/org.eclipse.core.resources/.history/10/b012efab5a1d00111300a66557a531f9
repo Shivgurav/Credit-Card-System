@@ -1,0 +1,5 @@
+package com.payPanda.exception;
+
+public class CardNotFoundException {
+
+}

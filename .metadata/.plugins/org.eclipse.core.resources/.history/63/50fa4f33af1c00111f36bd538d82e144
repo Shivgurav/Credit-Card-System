@@ -1,0 +1,11 @@
+package com.payPanda.dto;
+
+import lombok.Data;
+
+@Data
+public class CardDeatilsDTO {
+ private Boolean valid;
+  private Double creditLimit;
+  private String message;
+ 
+}

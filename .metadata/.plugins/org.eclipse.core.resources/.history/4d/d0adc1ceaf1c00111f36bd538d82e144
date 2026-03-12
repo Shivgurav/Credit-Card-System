@@ -1,0 +1,9 @@
+package com.payPanda.service;
+
+import com.payPanda.dto.TransactionRequestDTO;
+
+public interface TransactionService {
+
+	String createTransaction(TransactionRequestDTO transactionRequestDTO);
+
+}

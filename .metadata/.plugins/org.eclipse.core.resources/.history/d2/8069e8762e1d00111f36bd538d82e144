@@ -1,0 +1,260 @@
+package com.payPanda.service;
+
+import com.payPanda.dto.*;
+import com.payPanda.entity.TransactionEntity;
+import com.payPanda.repository.TransactionRepository;
+
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+
+import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class TransactionServiceImpl implements TransactionService {
+
+    private static final Logger log = LoggerFactory.getLogger(TransactionServiceImpl.class);
+    private static final SecureRandom random = new SecureRandom();
+
+    private final TransactionRepository transactionRepository;
+    private final RestTemplate restTemplate;
+
+    // Docker container-to-container URLs — resolved by Docker's internal DNS
+    private static final String CARD_SERVICE_URL     = "http://PAYPANDACARDISUUE:8082";
+    private static final String MERCHANT_SERVICE_URL = "http://MERCHANTSERVICE:8086";
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // POST /transactions  — Full validation pipeline → save → update limit
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    public TransactionResponseDTO processTransaction(TransactionRequestDTO request) {
+
+        // ── STEP 1: Fetch card details from card-service ──────────────────────
+        CardDetailsDTO card = fetchCard(request.getCardNumber());
+        if (card == null) {
+            return declinedResponse("Card validation service is unavailable. Please try again later.");
+        }
+
+        // ── STEP 2: Check card status (must be Open) ──────────────────────────
+        if (!"Open".equalsIgnoreCase(card.getCardStatus())) {
+            log.warn("Transaction declined — card {} is {}", request.getCardNumber(), card.getCardStatus());
+            return declinedResponse("Card is " + card.getCardStatus() + ". Transactions are not allowed.");
+        }
+
+        // ── STEP 3: Check card expiry (YYMM format e.g. "2612") ──────────────
+        if (isExpired(card.getExpiryDate())) {
+            log.warn("Transaction declined — card {} has expired (expiry={})",
+                    request.getCardNumber(), card.getExpiryDate());
+            return declinedResponse("Card has expired. Please contact your bank for a replacement.");
+        }
+
+        // ── STEP 4: Fetch merchant details from merchant-service ──────────────
+        MerchantDetailsDTO merchant = fetchMerchant(request.getMerchantId());
+        if (merchant == null) {
+            return declinedResponse("Merchant validation service is unavailable. Please try again later.");
+        }
+
+        // ── STEP 5: Check merchant is Active ─────────────────────────────────
+        if (!"Active".equalsIgnoreCase(merchant.getStatus())) {
+            log.warn("Transaction declined — merchant {} is not active", request.getMerchantId());
+            return declinedResponse("Merchant is not active. Transaction cannot be processed.");
+        }
+
+        // ── STEP 6: Check available credit limit ─────────────────────────────
+        if (card.getAvailableLimit().compareTo(request.getAmount()) < 0) {
+            log.warn("Transaction declined — insufficient limit for card {}. Available={}, Requested={}",
+                    request.getCardNumber(), card.getAvailableLimit(), request.getAmount());
+            return declinedResponse("Insufficient credit limit. Available: ₹" + card.getAvailableLimit());
+        }
+
+        // ── STEP 7: Check per-day transaction limit ───────────────────────────
+        if (card.getPerDayLimit() != null) {
+            BigDecimal spentToday = getSpentToday(request.getCardNumber());
+            BigDecimal remainingDailyLimit = card.getPerDayLimit().subtract(spentToday);
+
+            if (request.getAmount().compareTo(remainingDailyLimit) > 0) {
+                log.warn("Transaction declined — per-day limit exceeded for card {}. DailyLimit={}, SpentToday={}, Requested={}",
+                        request.getCardNumber(), card.getPerDayLimit(), spentToday, request.getAmount());
+                return declinedResponse("Per-day transaction limit exceeded. Remaining daily limit: ₹" + remainingDailyLimit);
+            }
+        }
+
+        // ── ALL VALIDATIONS PASSED — Save transaction ─────────────────────────
+        TransactionEntity transaction = new TransactionEntity();
+        transaction.setCardNumber(request.getCardNumber());
+        transaction.setMerchantId(request.getMerchantId());
+        transaction.setAmount(request.getAmount());
+        transaction.setTransactionDate(LocalDateTime.now());
+        transaction.setAuthCode(generateAuthCode());
+        transaction.setStatus("APPROVED");
+
+        TransactionEntity saved = transactionRepository.save(transaction);
+        log.info("Transaction APPROVED — id={} card={} merchant={} amount={} authCode={}",
+                saved.getTransactionId(), saved.getCardNumber(),
+                saved.getMerchantId(), saved.getAmount(), saved.getAuthCode());
+
+        // ── STEP 8: Deduct from card's available_limit in card-service ────────
+        boolean limitUpdated = deductCardLimit(request.getCardNumber(), request.getAmount());
+        if (!limitUpdated) {
+            // Transaction is already saved and approved — log warning but don't rollback
+            // In production you'd use a saga/outbox pattern here
+            log.error("CRITICAL: Transaction {} approved but card limit update FAILED for card={}",
+                    saved.getTransactionId(), request.getCardNumber());
+        }
+
+        return new TransactionResponseDTO(
+                saved.getTransactionId(),
+                "APPROVED",
+                "Transaction approved at " + merchant.getMerchantName(),
+                saved.getAuthCode(),
+                saved.getAmount(),
+                saved.getTransactionDate()
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // GET /transactions/{cardNumber}
+    // ─────────────────────────────────────────────────────────────────────────
+
+    @Override
+    public List<TransactionResponseDTO> getTransactionsByCard(String cardNumber) {
+        return transactionRepository.findByCardNumber(cardNumber)
+                .stream()
+                .map(t -> new TransactionResponseDTO(
+                        t.getTransactionId(),
+                        t.getStatus(),
+                        t.getStatus().equals("APPROVED") ? "Transaction approved" : "Transaction declined",
+                        t.getAuthCode(),
+                        t.getAmount(),
+                        t.getTransactionDate()))
+                .collect(Collectors.toList());
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Private helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Calls card-service to get full card details.
+     * Returns null if service is unreachable.
+     */
+    private CardDetailsDTO fetchCard(String cardNumber) {
+        String url = CARD_SERVICE_URL + "/cards/" + cardNumber;
+        try {
+            ResponseEntity<CardDetailsDTO> response =
+                    restTemplate.getForEntity(url, CardDetailsDTO.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (RestClientException e) {
+            log.error("card-service unreachable for cardNumber={}", cardNumber, e);
+        }
+        return null;
+    }
+
+    /**
+     * Calls merchant-service to get merchant details.
+     * Returns null if service is unreachable.
+     */
+    private MerchantDetailsDTO fetchMerchant(String merchantId) {
+        String url = MERCHANT_SERVICE_URL + "/merchants/" + merchantId;
+        try {
+            ResponseEntity<MerchantDetailsDTO> response =
+                    restTemplate.getForEntity(url, MerchantDetailsDTO.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody();
+            }
+        } catch (RestClientException e) {
+            log.error("merchant-service unreachable for merchantId={}", merchantId, e);
+        }
+        return null;
+    }
+
+    /**
+     * Calls card-service PUT /cards/{cardNumber}/deduct-limit
+     * to subtract the transaction amount from available_limit.
+     * Returns true if successful.
+     */
+    private boolean deductCardLimit(String cardNumber, BigDecimal amount) {
+        String url = CARD_SERVICE_URL + "/cards/" + cardNumber + "/deduct-limit";
+        try {
+            HttpEntity<UpdateLimitRequestDTO> request =
+                    new HttpEntity<>(new UpdateLimitRequestDTO(amount));
+            ResponseEntity<Void> response =
+                    restTemplate.exchange(url, HttpMethod.PUT, request, Void.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (RestClientException e) {
+            log.error("Failed to deduct limit on card-service for card={} amount={}", cardNumber, amount, e);
+            return false;
+        }
+    }
+
+    /**
+     * Checks if a card is expired.
+     * Expiry format from Neon DB: YYMM  e.g. "2612" = December 2026
+     * Card is valid through the last day of the expiry month.
+     */
+    private boolean isExpired(String expiryYYMM) {
+        try {
+            int year  = 2000 + Integer.parseInt(expiryYYMM.substring(0, 2));
+            int month = Integer.parseInt(expiryYYMM.substring(2, 4));
+            // Card expires at end of the expiry month
+            LocalDate expiryDate = LocalDate.of(year, month, 1).plusMonths(1).minusDays(1);
+            return LocalDate.now().isAfter(expiryDate);
+        } catch (Exception e) {
+            log.warn("Could not parse expiry date: {} — treating as expired", expiryYYMM);
+            return true;  // safe default
+        }
+    }
+
+    /**
+     * Returns total APPROVED transaction amount for a card today.
+     * Used to enforce per-day transaction limit.
+     */
+    private BigDecimal getSpentToday(String cardNumber) {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay   = LocalDate.now().atTime(LocalTime.MAX);
+        return transactionRepository.sumApprovedAmountForCardToday(cardNumber, startOfDay, endOfDay);
+    }
+
+    /**
+     * Generates a secure random 6-digit auth code (100000–999999).
+     */
+    private String generateAuthCode() {
+        return String.valueOf(100000 + random.nextInt(900000));
+    }
+
+    /**
+     * Helper to build a declined response — keeps processTransaction() clean.
+     */
+    private TransactionResponseDTO declinedResponse(String reason) {
+        return new TransactionResponseDTO(null, "DECLINED", reason, null, null, LocalDateTime.now());
+    }
+    @Override
+    public List<TransactionResponseDTO> getAllTransactionsByCard(String cardNumber) {
+        return transactionRepository.findByCardNumber(cardNumber)
+                .stream()
+                .map(t -> new TransactionResponseDTO(
+                        t.getTransactionId(),
+                        t.getStatus(),
+                        t.getStatus().equals("APPROVED") ? "Transaction approved" : "Transaction declined",
+                        t.getAuthCode(),
+                        t.getAmount(),
+                        t.getTransactionDate()))
+                .collect(Collectors.toList());
+    }
+}
