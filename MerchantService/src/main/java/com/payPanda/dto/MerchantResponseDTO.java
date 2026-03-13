@@ -1,5 +1,7 @@
 package com.payPanda.dto;
 
+import java.math.BigDecimal;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,4 +19,5 @@ public class MerchantResponseDTO {
     private String accountNumber;
     private String ifscCode;
     private String status;
+    private BigDecimal totalAmountReceived;
 }

@@ -3,6 +3,7 @@ package com.payPanda.controller;
 import com.payPanda.dto.MerchantRequestDTO;
 import com.payPanda.dto.MerchantResponseDTO;
 import com.payPanda.dto.MerchantValidateDTO;
+import com.payPanda.dto.UpdateAmountRequestDTO;
 import com.payPanda.service.MerchantService;
 
 import jakarta.validation.Valid;
@@ -19,6 +20,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MerchantController {
 
+	@PutMapping("/{merchantId}/add-amount")
+	public ResponseEntity<String> addAmount(
+	        @PathVariable String merchantId,
+	        @RequestBody UpdateAmountRequestDTO request) {
+	    merchantService.addAmountReceived(merchantId, request.getAmount());
+	    return ResponseEntity.ok("Amount updated");
+	}
     private final MerchantService merchantService;
 
     /**

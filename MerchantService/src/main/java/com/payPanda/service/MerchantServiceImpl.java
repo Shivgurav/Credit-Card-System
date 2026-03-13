@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -97,6 +98,8 @@ public class MerchantServiceImpl implements MerchantService {
         dto.setAccountNumber(entity.getAccountNumber());
         dto.setIfscCode(entity.getIfscCode());
         dto.setStatus(entity.getStatus());
+        dto.setTotalAmountReceived(entity.getTotalAmountReceived() != null 
+        	    ? entity.getTotalAmountReceived() : BigDecimal.ZERO);
         return dto;
     }
 
@@ -116,5 +119,17 @@ public class MerchantServiceImpl implements MerchantService {
 			return merchantValidateDTO;
 			
 		}
+	}
+
+	@Override
+	public void addAmountReceived(String merchantId, BigDecimal amount) {
+	    MerchantEntity merchant = merchantRepository.findById(merchantId)
+	            .orElseThrow(() -> new RuntimeException("Merchant not found: " + merchantId));
+	    BigDecimal current = merchant.getTotalAmountReceived() != null 
+	            ? merchant.getTotalAmountReceived() : BigDecimal.ZERO;
+	    merchant.setTotalAmountReceived(current.add(amount));
+	    merchantRepository.save(merchant);
+	    log.info("Merchant {} received ₹{} — total now ₹{}", 
+	            merchantId, amount, merchant.getTotalAmountReceived());
 	}
 }

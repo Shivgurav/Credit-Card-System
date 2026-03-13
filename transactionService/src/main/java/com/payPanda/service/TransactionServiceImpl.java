@@ -109,6 +109,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         // ── STEP 8: Deduct from card's available_limit in card-service ────────
         boolean limitUpdated = deductCardLimit(request.getCardNumber(), request.getAmount());
+        addMerchantAmount(request.getMerchantId(), request.getAmount());
         if (!limitUpdated) {
             // Transaction is already saved and approved — log warning but don't rollback
             // In production you'd use a saga/outbox pattern here
@@ -191,6 +192,7 @@ public class TransactionServiceImpl implements TransactionService {
      */
     private boolean deductCardLimit(Long cardNumber, BigDecimal amount) {
         String url = CARD_SERVICE_URL + "/cards/" + cardNumber + "/deduct-limit";
+      
         try {
             HttpEntity<UpdateLimitRequestDTO> request =
                     new HttpEntity<>(new UpdateLimitRequestDTO(amount));
@@ -201,6 +203,7 @@ public class TransactionServiceImpl implements TransactionService {
             log.error("Failed to deduct limit on card-service for card={} amount={}", cardNumber, amount, e);
             return false;
         }
+        
     }
 
     /**
@@ -243,5 +246,21 @@ public class TransactionServiceImpl implements TransactionService {
      */
     private TransactionResponseDTO declinedResponse(String reason) {
         return new TransactionResponseDTO(null, "DECLINED", reason, null, null, LocalDateTime.now());
+    }
+    /**
+     * Calls merchant-service to add transaction amount to merchant's total received.
+     */
+    private void addMerchantAmount(String merchantId, BigDecimal amount) {
+        String url = MERCHANT_SERVICE_URL + "/merchants/" + merchantId + "/add-amount";
+        try {
+            HttpEntity<UpdateLimitRequestDTO> request =
+                    new HttpEntity<>(new UpdateLimitRequestDTO(amount));
+            restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
+            log.info("Merchant {} credited ₹{}", merchantId, amount);
+        } catch (RestClientException e) {
+            log.error("Failed to update merchant amount for merchantId={} amount={}", 
+                    merchantId, amount, e);
+            // Don't throw — transaction is already approved
+        }
     }
 }

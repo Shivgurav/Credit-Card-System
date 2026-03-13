@@ -1,5 +1,7 @@
 package com.payPanda.entity;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -32,6 +34,10 @@ public class MerchantEntity {
 
     @Column(name = "status", length = 20, nullable = false)
     private String status; 
+    
+ 
+    @Column(name = "total_amount_received", precision = 15, scale = 2)
+    private BigDecimal totalAmountReceived = BigDecimal.ZERO;
     
     // "Active" or "Closed"
     
