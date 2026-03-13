@@ -86,7 +86,7 @@ function CardServices() {
       setSelected(updated);
       setCards(prev => prev.map(c => c.cardNumber === updated.cardNumber ? updated : c));
       setBillMsg({ type:"success",
-        text:`✅ Bill payment of ₹${Number(billAmount).toLocaleString()} successful! Available limit: ₹${Number(updated.availableLimit).toLocaleString()}` });
+        text:` Bill payment of ₹${Number(billAmount).toLocaleString()} successful! Available limit: ₹${Number(updated.availableLimit).toLocaleString()}` });
       setBillAmount("");
       resetPin();
     } catch(err) {
@@ -104,7 +104,7 @@ function CardServices() {
       setSelected(updated);
       setCards(prev => prev.map(c => c.cardNumber === updated.cardNumber ? updated : c));
       setWithdrawMsg({ type:"success",
-        text:`✅ Cash withdrawal of ₹${Number(withdrawAmount).toLocaleString()} successful! Available limit: ₹${Number(updated.availableLimit).toLocaleString()}` });
+        text:` Cash withdrawal of ₹${Number(withdrawAmount).toLocaleString()} successful! Available limit: ₹${Number(updated.availableLimit).toLocaleString()}` });
       setWithdraw("");
       resetPin();
     } catch(err) {
@@ -233,7 +233,7 @@ function CardServices() {
                     background:"rgba(0,196,140,0.1)",
                     color:"var(--success)",fontSize:"13px"
                   }}>
-                    ✅ No outstanding bill. You're all clear!
+                     No outstanding bill. You're all clear!
                   </div>
                 ) : (
                   <>
@@ -272,7 +272,7 @@ function CardServices() {
 
               {/* ── Cash Withdrawal ──────────────────────────── */}
               <div className="glass" style={{padding:"24px"}}>
-                <h3 style={{marginBottom:"16px",fontSize:"16px"}}>🏧 Cash Withdrawal</h3>
+                <h3 style={{marginBottom:"16px",fontSize:"16px"}}> Cash Withdrawal</h3>
 
                 {selectedCard.cardStatus !== "Open" ? (
                   <div style={{
@@ -280,7 +280,7 @@ function CardServices() {
                     background:"rgba(255,59,59,0.08)",
                     color:"var(--danger)",fontSize:"13px"
                   }}>
-                    ❌ Card is {selectedCard.cardStatus}. Cannot withdraw cash.
+                     Card is {selectedCard.cardStatus}. Cannot withdraw cash.
                   </div>
                 ) : (
                   <>

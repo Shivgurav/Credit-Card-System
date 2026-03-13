@@ -68,7 +68,7 @@ function CardStatus() {
       const res = await updateCardStatus({ cardNumber: Number(card.cardNumber), status });
       setCard(res.data);
       setStatus(res.data.cardStatus);
-      setMsg({ type:"success", text:`✅ Card status updated to ${status}` });
+      setMsg({ type:"success", text:` Card status updated to ${status}` });
     } catch(err) {
       setMsg({ type:"error", text: err.response?.data?.message || "Update failed." });
     } finally { setLoad(false); }
@@ -172,7 +172,7 @@ function CardStatus() {
           value={cardNumber} onChange={e=>setCardNumber(e.target.value)}
           maxLength={16} required />
         <button type="submit" className="pp-btn pp-btn-primary" style={{whiteSpace:"nowrap"}} disabled={searching}>
-          {searching ? "Searching..." : "🔍 Search"}
+          {searching ? "Searching..." : " Search"}
         </button>
       </form>
 

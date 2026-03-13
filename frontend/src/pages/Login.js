@@ -16,7 +16,7 @@ function Login() {
     e.preventDefault();
     setError(""); setLoading(true);
     try {
-      // ✅ Plain password — backend BCrypt handles matching
+      //  Plain password — backend BCrypt handles matching
       const res = await loginUser({ email: form.email, password: form.password });
 
     const { token, role, name } = res.data;
@@ -25,7 +25,7 @@ localStorage.setItem("login",    "true");
 localStorage.setItem("token",    token);
 localStorage.setItem("role",     role?.toUpperCase() || "USER");
 localStorage.setItem("username", name || form.email);
-localStorage.setItem("email",    form.email);  // ✅ store email for card lookup
+localStorage.setItem("email",    form.email);  //  store email for card lookup
 
       navigate("/dashboard");
     } catch (err) {

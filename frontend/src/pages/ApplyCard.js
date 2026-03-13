@@ -26,8 +26,8 @@ function ApplyCard() {
         cardType:      form.cardType,
       };
 
-      const res = await applyCard(payload);  // ✅ Live API call
-      setMsg({ type:"success", text:`✅ Application submitted! A ${form.cardType} card will be issued to ${form.name}. Application ID: ${res.data.applicationId || ""}` });
+      const res = await applyCard(payload);  //  Live API call
+      setMsg({ type:"success", text:` Application submitted! A ${form.cardType} card will be issued to ${form.name}. Application ID: ${res.data.applicationId || ""}` });
       setForm(INITIAL);
     } catch(err) {
       setMsg({ type:"error", text: err.response?.data?.message || "Submission failed." });
@@ -81,7 +81,7 @@ function ApplyCard() {
           <div className="form-group">
             <label className="pp-label">Address</label>
             <input name="address" value={form.address} onChange={handleChange}
-              className="pp-input" placeholder="Mumbai, Maharashtra" />
+              className="pp-input" placeholder="Enter address" />
           </div>
 
           <div className="form-row">

@@ -19,7 +19,7 @@ function Register() {
 
     setLoading(true);
     try {
-      // ✅ Plain password — backend BCrypt handles encoding
+      //  Plain password — backend BCrypt handles encoding
       const payload = {
         name:     form.name,
         email:    form.email,
@@ -28,7 +28,7 @@ function Register() {
         address:  form.address
       };
 
-      await registerUser(payload);  // ✅ Live API call to /auth/signup
+      await registerUser(payload);  //  Live API call to /auth/signup
 
       setSuccess("Account created! Redirecting to login...");
       setTimeout(() => navigate("/login"), 1800);
@@ -52,13 +52,13 @@ function Register() {
           <div className="form-group">
             <label className="pp-label">FULL NAME</label>
             <input name="name" value={form.name} onChange={handleChange}
-              className="pp-input" placeholder="Priya Nivalkar" required />
+              className="pp-input" placeholder="Enter Name" required />
           </div>
 
           <div className="form-group">
             <label className="pp-label">EMAIL</label>
             <input type="email" name="email" value={form.email} onChange={handleChange}
-              className="pp-input" placeholder="priya@paypanda.com" required />
+              className="pp-input" placeholder="abc@gmail.com" required />
           </div>
 
           <div className="form-row">
@@ -84,7 +84,7 @@ function Register() {
           <div className="form-group">
             <label className="pp-label">ADDRESS</label>
             <input name="address" value={form.address} onChange={handleChange}
-              className="pp-input" placeholder="Mumbai, Maharashtra" required />
+              className="pp-input" placeholder="Enter Address" required />
           </div>
 
           <button className="pp-btn pp-btn-primary pp-btn-full" disabled={loading} style={{marginTop:"8px"}}>

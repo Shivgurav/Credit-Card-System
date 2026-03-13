@@ -8,6 +8,7 @@ function StatusBadge({ status }) {
   return <span className={`badge ${cls}`}>{status}</span>;
 }
 
+
 function Dashboard() {
   const role  = localStorage.getItem("role")     || "USER";
   const name  = localStorage.getItem("username") || "User";
@@ -147,6 +148,8 @@ function Dashboard() {
     REJECTED: "var(--danger)",
     PENDING:  "var(--warning)"
   };
+
+
 
   return (
     <>
@@ -386,13 +389,32 @@ function Dashboard() {
                 <StatusBadge status={userMerchant.status} />
               </div>
 
+              {/*  Total Amount Received */}
+              <div style={{
+                padding:"16px",borderRadius:"10px",marginBottom:"16px",
+                background:"rgba(0,196,140,0.08)",
+                borderLeft:"3px solid var(--success)"
+              }}>
+                <div className="pp-label" style={{marginBottom:"4px"}}>
+                   Total Amount Received
+                </div>
+                <div style={{fontSize:"26px",fontWeight:800,color:"var(--success)"}}>
+                  ₹{Number(userMerchant.totalAmountReceived || 0).toLocaleString("en-IN", {
+                    minimumFractionDigits:2, maximumFractionDigits:2
+                  })}
+                </div>
+                <div style={{color:"var(--muted)",fontSize:"12px",marginTop:"4px"}}>
+                  Cumulative amount received via PayPanda transactions
+                </div>
+              </div>
+
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"16px"}}>
                 {[
-                  { label:"Email",      value: userMerchant.email          },
-                  { label:"Mobile",     value: userMerchant.mobileNumber   },
-                  { label:"Bank Name",  value: userMerchant.bankName       || "—" },
-                  { label:"Account No", value: userMerchant.accountNumber  || "—" },
-                  { label:"IFSC Code",  value: userMerchant.ifscCode       || "—" },
+                  { label:"Email",      value: userMerchant.email         },
+                  { label:"Mobile",     value: userMerchant.mobileNumber  },
+                  { label:"Bank Name",  value: userMerchant.bankName      || "—" },
+                  { label:"Account No", value: userMerchant.accountNumber || "—" },
+                  { label:"IFSC Code",  value: userMerchant.ifscCode      || "—" },
                 ].map(item => (
                   <div key={item.label} className="glass" style={{padding:"12px"}}>
                     <div className="pp-label" style={{marginBottom:"4px"}}>{item.label}</div>

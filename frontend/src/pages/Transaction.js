@@ -16,7 +16,7 @@ function Transaction() {
   const [txns, setTxns]           = useState([]);
   const [cardSearch, setCardSearch] = useState("");
   const [searching, setSearching]   = useState(false);
-  const [searched, setSearched]     = useState(false); // ✅ track if search was done
+  const [searched, setSearched]     = useState(false); //  track if search was done
 
   function handleChange(e) { setForm({...form,[e.target.name]:e.target.value}); }
 
@@ -29,7 +29,7 @@ function Transaction() {
         merchantId: form.merchantId,
         amount:     parseFloat(form.amount),   // BigDecimal in backend
       };
-      const res = await postTransaction(payload);  // ✅ Live API
+      const res = await postTransaction(payload);  //  Live API
       const txn = res.data;                        // TransactionResponseDTO
 
       if (txn.status === "APPROVED") {
@@ -47,7 +47,7 @@ function Transaction() {
   async function handleSearch(e) {
     e.preventDefault(); setSearching(true); setSearched(false);
     try {
-      const res = await getTransactionsByCard(Number(cardSearch));  // ✅ Live API
+      const res = await getTransactionsByCard(Number(cardSearch));  //  Live API
       setTxns(res.data || []);
       setSearched(true);
     } catch(err) {
