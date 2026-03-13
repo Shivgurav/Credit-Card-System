@@ -1,8 +1,0 @@
-package com.payPanda.dto;
-
-public class CardDeatilsDTO {
- private Boolean valid;
-  private Double creditLimit;
-  private String message;
- 
-}

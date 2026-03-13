@@ -1,0 +1,6 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      - TZ=Asia/Kolkata
+      - POSTGRES_TIMEZONE=Asia/Kolkata
