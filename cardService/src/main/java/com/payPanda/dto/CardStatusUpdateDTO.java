@@ -1,0 +1,18 @@
+package com.payPanda.dto;
+
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import lombok.Data;
+
+@Data
+public class CardStatusUpdateDTO {
+
+    @NotNull
+    private Long cardNumber;
+
+    @NotBlank(message = "Status is mandatory")
+    @Pattern(regexp = "^(Open|Blocked|Closed)$", message = "Status must be Open, Blocked, or Closed")
+    private String status;
+}
